@@ -59,6 +59,9 @@ public class ExecuteService {
         // Build Docker command
         List<String> dockerCommand = List.of(
                 "docker", "run", "--rm",
+                "--cpus=0.5",                     // limit to half CPU
+                "--memory=256m",                  // max 256MB memory
+                "--network=none",                // disable network for security
                 "-v", tempDir.toAbsolutePath() + ":/code",
                 image,
                 "bash", "-c", containerCommand
