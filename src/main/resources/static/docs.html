@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Digest API Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+          --bg-color: #f9f9fb;
+          --text-color: #222;
+          --accent: #6366f1;
+          --accent-hover: #4f46e5;
+          --card-bg: #ffffff;
+        }
+
+        [data-theme='dark'] {
+          --bg-color: #1f1f2f;
+          --text-color: #eee;
+          --accent: #818cf8;
+          --accent-hover: #a5b4fc;
+          --card-bg: #2d2d3d;
+        }
+
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background-color: var(--bg-color);
+          color: var(--text-color);
+          margin: 0;
+          padding: 0;
+          transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        header {
+          background-color: var(--accent);
+          color: white;
+          padding: 1.5rem;
+          text-align: center;
+          position: relative;
+        }
+
+        .theme-toggle {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: none;
+          border: 1px solid white;
+          padding: 0.4rem 0.8rem;
+          border-radius: 5px;
+          color: white;
+          cursor: pointer;
+          font-size: 0.9rem;
+        }
+
+        main {
+          padding: 2rem 1rem;
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+
+        h1 {
+          font-size: 2.2rem;
+          margin-bottom: 0.3rem;
+        }
+
+        h2 {
+          margin-top: 2rem;
+          font-size: 1.5rem;
+          color: var(--accent);
+        }
+
+        p {
+          line-height: 1.6;
+        }
+
+        .code-box {
+          background-color: var(--card-bg);
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          padding: 1rem;
+          margin: 1rem 0;
+          overflow-x: auto;
+          font-family: monospace;
+          white-space: pre-wrap;
+        }
+
+        a.button {
+          display: inline-block;
+          margin-top: 1rem;
+          padding: 0.7rem 1.4rem;
+          background-color: var(--accent);
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          font-weight: bold;
+          transition: background-color 0.3s ease;
+        }
+
+        a.button:hover {
+          background-color: var(--accent-hover);
+        }
+
+        footer {
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.9rem;
+          background-color: #eee;
+          color: #555;
+        }
+
+        [data-theme='dark'] footer {
+          background-color: #161625;
+          color: #aaa;
+        }
+
+        @media (max-width: 600px) {
+          h1 {
+            font-size: 1.8rem;
+          }
+
+          .theme-toggle {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+          }
+        }
+    </style>
+</head>
+<body data-theme="light">
+<header>
+    <h1>Digest API Documentation</h1>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
+</header>
+
+<main>
+    <p>
+        The Digest API allows you to compile and run code in different programming languages using Docker containers.
+    </p>
+
+    <h2>📌 POST /api/v1/execute</h2>
+    <p>Sends code to be compiled and run in a sandboxed Docker container.</p>
+
+    <p><strong>Request body:</strong></p>
+    <div class="code-box">
+        {
+            "language": "python",
+            "version": "3.11",
+            "files": [
+                {
+                "name": "main.py",
+                "content": "print('Hello from Digest!')"
+                }
+            ],
+            "stdin": ""
+        }
+    </div>
+
+    <p><strong>Response:</strong></p>
+    <div class="code-box">
+        {
+            "stdout": "Hello from Digest!",
+            "stderr": "",
+            "exitCode": 0
+        }
+    </div>
+
+    <h2>📌 GET /api/v1/runtimes</h2>
+    <p>Returns a list of supported programming languages and default versions.</p>
+
+    <div class="code-box">
+        [
+            { "language": "java", "version": "21" },
+            { "language": "python", "version": "3.11" },
+            { "language": "csharp", "version": "8.0" },
+            { "language": "cpp", "version": "13.2" }
+        ]
+    </div>
+
+    <a href="/" class="button">← Back to Home</a>
+</main>
+
+<footer>
+    &copy; 2025 Digest API — All rights reserved.
+</footer>
+
+<script>
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute('data-theme');
+      body.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+</script>
+</body>
+</html>
