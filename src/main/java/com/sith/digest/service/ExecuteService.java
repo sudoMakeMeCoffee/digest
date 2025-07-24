@@ -1,5 +1,6 @@
 package com.sith.digest.service;
 
+import com.sith.digest.config.LanguageConfig;
 import com.sith.digest.dto.request.ExecuteRequestDto;
 import com.sith.digest.dto.request.FileDto;
 import com.sith.digest.dto.response.ExecuteResponseDto;
@@ -18,14 +19,9 @@ public class ExecuteService {
     public ExecuteResponseDto execute(ExecuteRequestDto requestDto) throws IOException, InterruptedException {
         Path tempDir = Files.createTempDirectory("docker-runner-");
 
-        String image;
-        String containerCommand;
         String mainFileName = null;
 
-        String language = requestDto.getLanguage().toLowerCase();
-        String version = requestDto.getVersion() != null ? requestDto.getVersion() : getDefaultVersion(language);
-
-        // Write all provided files
+        // Write uploaded files to temp dir
         for (FileDto file : requestDto.getFiles()) {
             String name = file.getName() != null ? file.getName() : UUID.randomUUID().toString();
             Path filePath = tempDir.resolve(name);
@@ -33,35 +29,14 @@ public class ExecuteService {
             if (mainFileName == null) mainFileName = name;
         }
 
-        // Determine Docker image and command
-        switch (language) {
-            case "python":
-                image = "python:" + version + "-slim";
-                containerCommand = "python /code/" + mainFileName;
-                break;
+        // Get language config
+        LanguageConfig langConfig = LanguageConfig.from(requestDto.getLanguage());
+        String version = requestDto.getVersion() != null ? requestDto.getVersion() : langConfig.getDefaultVersion();
 
-            case "java":
-                image = "openjdk:" + version + "-slim";
-                containerCommand = "bash -c \"javac /code/" + mainFileName + " && java -cp /code Main\"";
-                break;
+        // Build Docker image and command
+        String image = langConfig.getImage(version);
+        String containerCommand = langConfig.getCommand(mainFileName);
 
-            case "csharp":
-            case "c#":
-                image = "mcr.microsoft.com/dotnet/sdk:" + version;
-                containerCommand = "bash -c \"dotnet new console -o /code/app && mv /code/*.cs /code/app/ && cd /code/app && dotnet run\"";
-                break;
-
-            case "cpp":
-            case "c++":
-                image = "gcc:" + version;
-                containerCommand = "bash -c \"g++ /code/" + mainFileName + " -o /code/a.out && /code/a.out\"";
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unsupported language: " + language);
-        }
-
-        // Build Docker command
         List<String> dockerCommand = List.of(
                 "docker", "run", "--rm",
                 "-v", tempDir.toAbsolutePath() + ":/code",
@@ -69,6 +44,7 @@ public class ExecuteService {
                 "bash", "-c", containerCommand
         );
 
+        // Run Docker process
         ProcessBuilder pb = new ProcessBuilder(dockerCommand);
         pb.redirectErrorStream(true);
         Process process = pb.start();
@@ -81,7 +57,7 @@ public class ExecuteService {
             }
         }
 
-        // Read output
+        // Capture output
         StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
@@ -92,7 +68,7 @@ public class ExecuteService {
 
         int exitCode = process.waitFor();
 
-        // Cleanup
+        // Cleanup temp dir
         try {
             Files.walk(tempDir)
                     .sorted(Comparator.reverseOrder())
@@ -102,21 +78,12 @@ public class ExecuteService {
             e.printStackTrace();
         }
 
+        // Build response
         ExecuteResponseDto result = new ExecuteResponseDto();
         result.stdout = output.toString();
-        result.stderr = ""; // merged with stdout
+        result.stderr = ""; // already merged with stdout
         result.exitCode = exitCode;
 
         return result;
-    }
-
-    private String getDefaultVersion(String language) {
-        return switch (language) {
-            case "python" -> "3.11";
-            case "java" -> "21";
-            case "csharp", "c#" -> "8.0";
-            case "cpp", "c++" -> "13.2";
-            default -> throw new IllegalArgumentException("Unsupported language: " + language);
-        };
     }
 }
