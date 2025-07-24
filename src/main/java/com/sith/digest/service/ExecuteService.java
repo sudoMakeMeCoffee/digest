@@ -8,111 +8,80 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ExecuteService {
 
     public ExecuteResponseDto execute(ExecuteRequestDto requestDto) throws IOException, InterruptedException {
-        // Create temp dir for this execution
         Path tempDir = Files.createTempDirectory("docker-runner-");
 
-        // Prepare variables
         String image;
-        String compileCommand = null;
-        String runCommand;
-        List<String> args = requestDto.getArgs() != null ? requestDto.getArgs() : Collections.emptyList();
-        long runTimeoutMs = Optional.ofNullable(requestDto.getRunTimeout()).orElse(10000L);
-        long compileTimeoutMs = Optional.ofNullable(requestDto.getCompileTimeout()).orElse(5000L);
+        String containerCommand;
+        String mainFileName = null;
 
-        // Write all files to tempDir
+        String language = requestDto.getLanguage().toLowerCase();
+        String version = requestDto.getVersion() != null ? requestDto.getVersion() : getDefaultVersion(language);
+
+        // Write all provided files
         for (FileDto file : requestDto.getFiles()) {
-            String fileName = file.getName() != null ? file.getName() : UUID.randomUUID().toString();
-            Path filePath = tempDir.resolve(fileName);
-            byte[] contentBytes;
-            switch (Optional.ofNullable(file.getEncoding()).orElse("utf8").toLowerCase()) {
-                case "base64":
-                    contentBytes = Base64.getDecoder().decode(file.getContent());
-                    break;
-                case "hex":
-                    contentBytes = hexStringToByteArray(file.getContent());
-                    break;
-                case "utf8":
-                default:
-                    contentBytes = file.getContent().getBytes();
-                    break;
-            }
-            Files.write(filePath, contentBytes);
+            String name = file.getName() != null ? file.getName() : UUID.randomUUID().toString();
+            Path filePath = tempDir.resolve(name);
+            Files.writeString(filePath, file.getContent());
+            if (mainFileName == null) mainFileName = name;
         }
 
-        // Decide Docker image and commands based on language
-        switch (requestDto.getLanguage().toLowerCase()) {
-            case "java":
-                image = "openjdk:21-slim";
-                compileCommand = "javac /code/Main.java";
-                runCommand = "java -cp /code Main " + String.join(" ", args);
-                break;
+        // Determine Docker image and command
+        switch (language) {
             case "python":
-                image = "python:3.11-slim";
-                runCommand = "python /code/" + getFirstFileName(requestDto) + " " + String.join(" ", args);
+                image = "python:" + version + "-slim";
+                containerCommand = "python /code/" + mainFileName;
                 break;
+
+            case "java":
+                image = "openjdk:" + version + "-slim";
+                containerCommand = "bash -c \"javac /code/" + mainFileName + " && java -cp /code Main\"";
+                break;
+
             case "csharp":
             case "c#":
-                image = "mcr.microsoft.com/dotnet/sdk:8.0";
-                compileCommand = "dotnet new console -o /code/app && mv /code/Program.cs /code/app/Program.cs";
-                runCommand = "cd /code/app && dotnet run -- " + String.join(" ", args);
+                image = "mcr.microsoft.com/dotnet/sdk:" + version;
+                containerCommand = "bash -c \"dotnet new console -o /code/app && mv /code/*.cs /code/app/ && cd /code/app && dotnet run\"";
                 break;
+
             case "cpp":
             case "c++":
-                image = "gcc:13.2";
-                compileCommand = "g++ /code/" + getFirstFileName(requestDto) + " -o /code/a.out";
-                runCommand = "/code/a.out " + String.join(" ", args);
+                image = "gcc:" + version;
+                containerCommand = "bash -c \"g++ /code/" + mainFileName + " -o /code/a.out && /code/a.out\"";
                 break;
+
             default:
-                throw new IllegalArgumentException("Unsupported language: " + requestDto.getLanguage());
+                throw new IllegalArgumentException("Unsupported language: " + language);
         }
 
-        // Build the full container command
-        String containerCommand;
-        if (compileCommand != null) {
-            containerCommand = String.format("bash -c \"%s && %s\"", compileCommand, runCommand);
-        } else {
-            containerCommand = runCommand;
-        }
-
-        // Build docker command
-        List<String> dockerCommand = new ArrayList<>(Arrays.asList(
+        // Build Docker command
+        List<String> dockerCommand = List.of(
                 "docker", "run", "--rm",
-                "--cpus=0.5",
-                "--memory=512m",
-                "--network=none",
                 "-v", tempDir.toAbsolutePath() + ":/code",
                 image,
                 "bash", "-c", containerCommand
-        ));
+        );
 
         ProcessBuilder pb = new ProcessBuilder(dockerCommand);
         pb.redirectErrorStream(true);
         Process process = pb.start();
 
-        // Write stdin if provided
-        if (requestDto.getStdin() != null && !requestDto.getStdin().isEmpty()) {
+        // Write to stdin if provided
+        if (requestDto.getStdin() != null && !requestDto.getStdin().isBlank()) {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
                 writer.write(requestDto.getStdin());
                 writer.flush();
             }
         }
 
-        // Wait for completion with timeout
-        boolean finished = process.waitFor(runTimeoutMs, TimeUnit.MILLISECONDS);
-        if (!finished) {
-            process.destroyForcibly();
-            cleanup(tempDir);
-            return new ExecuteResponseDto("Execution timed out.", "", 124);
-        }
-
-        // Collect output
+        // Read output
         StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
             String line;
@@ -121,26 +90,9 @@ public class ExecuteService {
             }
         }
 
-        int exitCode = process.exitValue();
-        cleanup(tempDir);
+        int exitCode = process.waitFor();
 
-        ExecuteResponseDto response = new ExecuteResponseDto();
-        response.setStdout(output.toString());
-        response.setStderr(""); // combined output
-        response.setExitCode(exitCode);
-
-        return response;
-    }
-
-    private String getFirstFileName(ExecuteRequestDto requestDto) {
-        if (requestDto.getFiles() != null && !requestDto.getFiles().isEmpty()) {
-            FileDto first = requestDto.getFiles().get(0);
-            return first.getName() != null ? first.getName() : "main.py";
-        }
-        return "main.py"; // fallback
-    }
-
-    private void cleanup(Path tempDir) {
+        // Cleanup
         try {
             Files.walk(tempDir)
                     .sorted(Comparator.reverseOrder())
@@ -149,15 +101,22 @@ public class ExecuteService {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        ExecuteResponseDto result = new ExecuteResponseDto();
+        result.stdout = output.toString();
+        result.stderr = ""; // merged with stdout
+        result.exitCode = exitCode;
+
+        return result;
     }
 
-    private byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for(int i = 0; i < len; i += 2){
-            data[i/2] = (byte) ((Character.digit(s.charAt(i),16) << 4)
-                    + Character.digit(s.charAt(i+1),16));
-        }
-        return data;
+    private String getDefaultVersion(String language) {
+        return switch (language) {
+            case "python" -> "3.11";
+            case "java" -> "21";
+            case "csharp", "c#" -> "8.0";
+            case "cpp", "c++" -> "13.2";
+            default -> throw new IllegalArgumentException("Unsupported language: " + language);
+        };
     }
 }
