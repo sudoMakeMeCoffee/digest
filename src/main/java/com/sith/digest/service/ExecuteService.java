@@ -34,6 +34,20 @@ public class ExecuteService {
                 containerCommand = "bash -c \"javac /code/Main.java && java -cp /code Main\"";
                 break;
 
+            case "csharp":
+            case "c#":
+                fileName = "Program.cs";
+                image = "mcr.microsoft.com/dotnet/sdk:8.0";
+                containerCommand = "bash -c \"dotnet new console -o /code/app && mv /code/Program.cs /code/app/Program.cs && cd /code/app && dotnet run\"";
+                break;
+
+            case "cpp":
+            case "c++":
+                fileName = "main.cpp";
+                image = "gcc:13.2";
+                containerCommand = "bash -c \"g++ /code/main.cpp -o /code/a.out && /code/a.out\"";
+                break;
+
             default:
                 throw new IllegalArgumentException("Unsupported language: " + requestDto.getLanguage());
         }
