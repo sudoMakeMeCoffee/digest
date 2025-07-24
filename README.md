@@ -1,9 +1,8 @@
 #  Digest API
-## Disgest and Poop the Output 💩
 
 Digest is a secure and Dockerized code execution API that compiles and runs code in multiple languages — on demand.
 
-> 💡 "Digest your code and poop the output."
+> "Digest your code and poop the output 💩"
 
 ---
 
