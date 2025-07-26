@@ -1,197 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <title>Digest API</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-        :root {
-          --bg-color: #f9f9fb;
-          --text-color: #222;
-          --accent: #6366f1;
-          --accent-hover: #4f46e5;
-          --card-bg: #ffffff;
-        }
+      :root {
+        --bg-color: #f9f9fb;
+        --text-color: #222;
+        --accent: #6366f1;
+        --accent-hover: #4f46e5;
+        --card-bg: #ffffff;
+      }
 
-        [data-theme='dark'] {
-          --bg-color: #1f1f2f;
-          --text-color: #eee;
-          --accent: #818cf8;
-          --accent-hover: #a5b4fc;
-          --card-bg: #2d2d3d;
-        }
+      [data-theme="dark"] {
+        --bg-color: #1f1f2f;
+        --text-color: #eee;
+        --accent: #818cf8;
+        --accent-hover: #a5b4fc;
+        --card-bg: #2d2d3d;
+      }
 
-        body {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          background-color: var(--bg-color);
-          color: var(--text-color);
-          margin: 0;
-          padding: 0;
-          transition: background-color 0.3s ease, color 0.3s ease;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
 
-        header {
-          background-color: var(--accent);
-          color: white;
-          padding: 1.5rem;
-          text-align: center;
-          position: relative;
-        }
+      header {
+        background-color: var(--accent);
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+        position: relative;
+      }
 
-        .theme-toggle {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          background: none;
-          border: 1px solid white;
-          padding: 0.4rem 0.8rem;
-          border-radius: 5px;
-          color: white;
-          cursor: pointer;
-          font-size: 0.9rem;
-        }
+      .theme-toggle {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: 1px solid white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 5px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
 
-        main {
+      main {
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: space-between;
+        padding: 2rem 1rem;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .tagline {
+        font-style: italic;
+        margin-top: 0.2rem;
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .logos {
+        display: flex;
         justify-content: center;
-          padding: 2rem 1rem;
-          max-width: 1000px;
-          margin: 0 auto;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+      }
 
-        }
+      .logos img {
+        height: 50px;
+        max-width: 100%;
+        filter: brightness(0.95);
+      }
 
+      .button {
+        margin: 2rem auto;
+        display: inline-block;
+        padding: 0.8rem 1.6rem;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 1rem;
+        transition: background-color 0.3s;
+      }
+
+      .button:hover {
+        background-color: var(--accent-hover);
+      }
+
+      .code-box {
+        background-color: var(--card-bg);
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 2rem;
+        overflow-x: auto;
+        font-family: monospace;
+        white-space: pre;
+        max-width: 100%;
+        box-sizing: border-box;
+        word-wrap: break-word;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1rem;
+        font-size: 0.9rem;
+        background-color: #eee;
+        color: #555;
+      }
+
+      [data-theme="dark"] footer {
+        background-color: #161625;
+        color: #aaa;
+      }
+
+      @media (max-width: 600px) {
         h1 {
-          font-size: 2.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .tagline {
-          font-style: italic;
-          margin-top: 0.2rem;
-          font-size: 1.1rem;
-          opacity: 0.9;
-        }
-
-        .logos {
-          display: flex;
-          justify-content: center;
-          gap: 1.5rem;
-          flex-wrap: wrap;
-          margin-top: 2rem;
-        }
-
-        .logos img {
-          height: 50px;
-          max-width: 100%;
-          filter: brightness(0.95);
+          font-size: 1.8rem;
         }
 
         .button {
-          margin: 2rem auto;
-          display: inline-block;
-          padding: 0.8rem 1.6rem;
-          background-color: var(--accent);
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-weight: bold;
-          text-decoration: none;
-          font-size: 1rem;
-          transition: background-color 0.3s;
+          padding: 0.6rem 1.2rem;
+          font-size: 0.95rem;
         }
 
-        .button:hover {
-          background-color: var(--accent-hover);
+        .logos {
+          gap: 1rem;
         }
 
-        .code-box {
-          background-color: var(--card-bg);
-          border: 1px solid #ccc;
-          border-radius: 8px;
-          padding: 1rem;
-          margin-top: 2rem;
-          overflow-x: auto;
-          font-family: monospace;
-          white-space: pre;
+        .logos img {
+          height: 40px;
         }
-
-        footer {
-          text-align: center;
-          padding: 1rem;
-          font-size: 0.9rem;
-          background-color: #eee;
-          color: #555;
-        }
-
-        [data-theme='dark'] footer {
-          background-color: #161625;
-          color: #aaa;
-        }
-
-        @media (max-width: 600px) {
-          h1 {
-            font-size: 1.8rem;
-          }
-
-          .button {
-            padding: 0.6rem 1.2rem;
-            font-size: 0.95rem;
-          }
-
-          .logos {
-            gap: 1rem;
-          }
-
-          .logos img {
-            height: 40px;
-          }
-        }
+      }
     </style>
-</head>
-<body data-theme="light">
-<header>
-    <h1>Digest API</h1>
-    <p class="tagline">Digest and poop the output 💩</p>
-    <button class="theme-toggle" onclick="toggleTheme()">🌙 Theme</button>
-</header>
+  </head>
+  <body data-theme="light">
+    <header>
+      <h1>Digest API</h1>
+      <p class="tagline">Digest and poop the output 💩</p>
+      <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </header>
 
-<main>
+    <main>
+      <div class="logos">
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg"
+          alt="Java"
+        />
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
+          alt="Python"
+        />
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg"
+          alt="C++"
+        />
+        <img
+          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg"
+          alt="C#"
+        />
+      </div>
 
-    <div class="logos">
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java" />
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" />
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg" alt="C++" />
-        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg" alt="C#" />
-    </div>
+      <a href="/docs.html" class="button">View Documentation</a>
 
-    <a href="/docs.html" class="button">View Documentation</a>
-
-    <div class="code-box">
-        {
-            "language": "java",
-            "version": "21",
-            "files": [
-                {
-                    "name": "Main.java",
-                    "content": "public class Main { public static void main(String[] args) { System.out.println(\"Hello, Digest!\"); } }"
+      <div class="code-box">
+        { 
+          "language": "java", 
+          "version": "21", 
+          "files": [ 
+                { 
+                  "name": "Main.java",
+                  "content": "public class Main { public static void main(String[] args) {System.out.println(\"Hello, Digest!\"); } }" 
                 }
-            ]
+          ]
+            
         }
-    </div>
-</main>
+      </div>
+    </main>
 
-<footer>
-    &copy; 2025 Digest API — All rights reserved.
-</footer>
+    <footer>&copy; 2025 Digest API — All rights reserved.</footer>
 
-<script>
-    function toggleTheme() {
-      const body = document.body;
-      const current = body.getAttribute('data-theme');
-      body.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
-    }
-</script>
-</body>
+    <script>
+      function toggleTheme() {
+        const body = document.body;
+        const button = document.querySelector(".theme-toggle");
+        const current = body.getAttribute("data-theme");
+        const newTheme = current === "light" ? "dark" : "light";
+
+        body.setAttribute("data-theme", newTheme);
+        button.textContent = newTheme === "dark" ? "☀️" : "🌙";
+      }
+
+      // Optional: set initial icon based on theme
+      window.addEventListener("DOMContentLoaded", () => {
+        const button = document.querySelector(".theme-toggle");
+        const current = document.body.getAttribute("data-theme");
+        button.textContent = current === "dark" ? "☀️" : "🌙";
+      });
+    </script>
+  </body>
 </html>
